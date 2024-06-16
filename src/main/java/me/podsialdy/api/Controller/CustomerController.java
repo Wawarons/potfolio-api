@@ -6,18 +6,26 @@ import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import me.podsialdy.api.DTO.CustomerRegisterDto;
+import me.podsialdy.api.DTO.LoginDto;
 import me.podsialdy.api.Entity.Customer;
 import me.podsialdy.api.Entity.RoleEnum;
 import me.podsialdy.api.Repository.CustomerRepository;
+import me.podsialdy.api.Service.CookieService;
+import me.podsialdy.api.Service.JwtService;
 import me.podsialdy.api.Service.RoleService;
 
 @RestController
@@ -34,12 +42,24 @@ public class CustomerController {
   @Autowired
   private RoleService roleService;
 
+  @Autowired
+  private AuthenticationManager authenticationManager;
+
+  @Autowired
+  private JwtService jwtService;
+
+  @Autowired
+  private CookieService cookieService;
+
   /**
-   * <p>Endpoint for register a new user</p> 
+   * <p>
+   * Endpoint for register a new user
+   * </p>
    *
-   * @param customerRegisterDto {@link me.podsialdy.api.DTO.CustomerRegisterDto} customer's informations
+   * @param customerRegisterDto {@link me.podsialdy.api.DTO.CustomerRegisterDto}
+   *                            user's informations
    *
-   * */
+   */
   @PostMapping(path = "register")
   public ResponseEntity<?> register(@Valid @RequestBody CustomerRegisterDto customerRegisterDto) {
 
@@ -48,7 +68,7 @@ public class CustomerController {
     Optional<Customer> customerEmail = customerRepository.findByEmail(customerRegisterDto.getEmail());
     Optional<Customer> customerUsername = customerRepository.findByUsername(customerRegisterDto.getUsername());
 
-    if(customerEmail.isPresent()) {
+    if (customerEmail.isPresent()) {
       log.error("Cannot create user email address is already taken.");
       return new ResponseEntity<>("Email already register", HttpStatus.FORBIDDEN);
     } else if (customerUsername.isPresent()) {
@@ -57,11 +77,11 @@ public class CustomerController {
     }
 
     Customer customer = Customer.builder()
-      .email(customerRegisterDto.getEmail())
-      .username(customerRegisterDto.getUsername())
-      .password(passwordEncoder.encode(customerRegisterDto.getPassword()))
-      .roles(Set.of(roleService.initRole(RoleEnum.USER)))
-      .build();
+        .email(customerRegisterDto.getEmail())
+        .username(customerRegisterDto.getUsername())
+        .password(passwordEncoder.encode(customerRegisterDto.getPassword()))
+        .roles(Set.of(roleService.initRole(RoleEnum.USER)))
+        .build();
 
     customerRepository.save(customer);
     log.info("New registration for customer: {}", customer.getId());
@@ -70,6 +90,31 @@ public class CustomerController {
 
   }
 
+  @PostMapping(path = "login")
+  public ResponseEntity<?> login(@Valid @RequestBody LoginDto loginDto, HttpServletResponse response) {
+    log.info("Customer {}", loginDto.getUsername());
+    Customer customer = customerRepository.findByUsernameOrEmail(loginDto.getUsername())
+        .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
+    try {
+      authenticationManager
+          .authenticate(new UsernamePasswordAuthenticationToken(loginDto.getUsername(), loginDto.getPassword()));
+      log.info("Customer {} is authenticated", customer.getId());
+      String jwt = jwtService.generateToken(customer);
+      cookieService.addAccesstoken(response, jwt);
+
+    } catch (BadCredentialsException e) {
+      return new ResponseEntity<>("Bad credentials", HttpStatus.BAD_REQUEST);
+    }
+
+    return new ResponseEntity<>("User authenticated", HttpStatus.OK);
+  }
+
+  @PostMapping(path = "logout")
+  public ResponseEntity<?> logout(HttpServletResponse response) {
+    cookieService.removeAccessToken(response);
+    log.info("User deconnected");
+    return new ResponseEntity<>("User logout", HttpStatus.OK);
+  }
 
 }

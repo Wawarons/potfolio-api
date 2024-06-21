@@ -1,4 +1,5 @@
 HELP.md
+todo.md
 env.properties
 target/
 !.mvn/wrapper/maven-wrapper.jar

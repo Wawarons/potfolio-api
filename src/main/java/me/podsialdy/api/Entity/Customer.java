@@ -4,13 +4,13 @@ import java.time.Instant;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import io.micrometer.common.lang.NonNull;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -22,6 +22,8 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -38,17 +40,18 @@ import lombok.Setter;
 public class Customer implements UserDetails {
 
   @Id
-  @GeneratedValue(strategy = GenerationType.UUID)
-  private String id;
+  @GeneratedValue(strategy = GenerationType.AUTO)
+  private UUID id;
 
   @Column(unique = true)
-  @NonNull
+  @NotNull
   @Email
   private String email;
 
   @Column(unique = true)
-  @NonNull
-  @Size(min = 3, max = 20)
+  @NotNull
+  @Pattern(regexp = "(?=.*[a-z]+)(?=.*[A-Z]+)(?=.*[0-9]+)(?=.*[.*$_!\\-+@;:/\\\\|']+)[A-Za-z0-9.*$_!\\-+@;:/\\\\|']+", message = "Password wrong format")
+  @Size(min = 12, max = 250, message = "Password size must be greater between 12 and 250")
   private String username;
   private String password;
 
@@ -57,21 +60,21 @@ public class Customer implements UserDetails {
   @Builder.Default
   private Set<Role> roles = new HashSet<>();
 
-  @NonNull
+  @NotNull
   @Builder.Default
   private boolean isBlock = false;
 
-  @NonNull
+  @NotNull
   @Builder.Default
   private boolean isVerified = false;
 
-  @NonNull
+  @NotNull
   @Builder.Default
   private Instant createdAt = Instant.now();
-
+  
   @Override
   public Collection<? extends GrantedAuthority> getAuthorities() {
-      return roles.stream().map(role -> new SimpleGrantedAuthority(role.getRole())).collect(Collectors.toList());
+      return roles.stream().map(role -> new SimpleGrantedAuthority("ROLE_" + role.getRole())).collect(Collectors.toList());
   }
 
   @Override

@@ -22,30 +22,39 @@ import me.podsialdy.api.Service.CookieService;
 import me.podsialdy.api.Service.JwtService;
 
 /**
- * <p>CodeController it's a {@link RestController} that handles endpoints related to the validation codes</p>
+ * CodeController it's a {@link RestController} that handles endpoints related
+ * to the validation codes
  * 
  */
 @RestController
 @Slf4j
 public class CodeController {
 
-    @Autowired
     private JwtService jwtService;
-
-    @Autowired
     private CookieService cookieService;
-
-    @Autowired
     private CustomerRepository customerRepository;
-
-    @Autowired
     private CodeService codeService;
 
+    @Autowired
+    public CodeController(JwtService jwtService, CookieService cookieService, CustomerRepository customerRepository,
+            CodeService codeService) {
+        this.jwtService = jwtService;
+        this.cookieService = cookieService;
+        this.customerRepository = customerRepository;
+        this.codeService = codeService;
+    }
+
     /**
-     * <p>Handle the user's code validation requests</p> 
-     * @param codeValidationDto {@link CodeValidationDto} Contain the validation code send by the user
-     * @param request {@link HttpServletRequest} Contain informations about user's request
-     * @param response {@link HttpServletResponse} Response sent to the user with the updated cookie
+     *
+     * Handle the user's code validation requests
+     *
+     * 
+     * @param codeValidationDto {@link CodeValidationDto} Contain the validation
+     *                          code send by the user
+     * @param request           {@link HttpServletRequest} Contain informations
+     *                          about user's request
+     * @param response          {@link HttpServletResponse} Response sent to the
+     *                          user with the updated cookie
      * @return {@link ResponseEntity}
      */
     @PostMapping(path = "auth/code/validation")
@@ -81,9 +90,13 @@ public class CodeController {
     }
 
     /**
-     * <p>Handle the user's new code request</p>
-     * @param request {@link HttpServletRequest} Contain informations about user's request
-     * @return {@link ResponseEntity} 
+     *
+     * Handle the user's new code request
+     *
+     * 
+     * @param request {@link HttpServletRequest} Contain informations about user's
+     *                request
+     * @return {@link ResponseEntity}
      */
     @GetMapping(path = "auth/code/claim")
     public ResponseEntity<ResponseDto> claimCode(HttpServletRequest request) {

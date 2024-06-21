@@ -1,5 +1,6 @@
 package me.podsialdy.api.Security;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -14,10 +15,17 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import me.podsialdy.api.Service.CustomerUserDetailsService;
+import me.podsialdy.api.Service.JwtService;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
+
+    @Autowired
+    private JwtService jwtService;
+
+    @Autowired
+    private CustomerUserDetailsService customerUserDetailsService;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception{
@@ -41,7 +49,7 @@ public class SecurityConfig {
 
     @Bean
     AuthFilter authFilter() {
-        return new AuthFilter();
+        return new AuthFilter(jwtService, customerUserDetailsService);
     }
     
 

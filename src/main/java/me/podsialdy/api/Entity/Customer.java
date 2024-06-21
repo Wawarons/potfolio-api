@@ -3,6 +3,7 @@ package me.podsialdy.api.Entity;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -31,6 +32,17 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+/**
+ * Represents a Customer entity that implements the UserDetails interface.
+ * This entity stores information about a customer, including their email,
+ * username, password,
+ * roles, block status, verification status, creation timestamp, and
+ * authorities.
+ * 
+ * The Customer class provides methods to add roles, retrieve authorities,
+ * password, and username,
+ * as well as a toString method for displaying customer information.
+ */
 @Entity
 @Getter
 @Setter
@@ -50,9 +62,10 @@ public class Customer implements UserDetails {
 
   @Column(unique = true)
   @NotNull
-  @Pattern(regexp = "(?=.*[a-z]+)(?=.*[A-Z]+)(?=.*[0-9]+)(?=.*[.*$_!\\-+@;:/\\\\|']+)[A-Za-z0-9.*$_!\\-+@;:/\\\\|']+", message = "Password wrong format")
-  @Size(min = 12, max = 250, message = "Password size must be greater between 12 and 250")
   private String username;
+  
+  @Size(min = 12, max = 250, message = "Password size must be greater between 12 and 250")
+  @Pattern(regexp = "(?=.*[a-z]+)(?=.*[A-Z]+)(?=.*[0-9]+)(?=.*[.*$_!\\-+@;:/\\\\|']+)[A-Za-z0-9.*$_!\\-+@;:/\\\\|']+", message = "Password wrong format")
   private String password;
 
   @ManyToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
@@ -71,10 +84,11 @@ public class Customer implements UserDetails {
   @NotNull
   @Builder.Default
   private Instant createdAt = Instant.now();
-  
+
   @Override
   public Collection<? extends GrantedAuthority> getAuthorities() {
-      return roles.stream().map(role -> new SimpleGrantedAuthority("ROLE_" + role.getRole())).collect(Collectors.toList());
+    return roles.stream().map(role -> new SimpleGrantedAuthority("ROLE_" + role.getRole()))
+        .collect(Collectors.toList());
   }
 
   @Override
@@ -86,9 +100,24 @@ public class Customer implements UserDetails {
   public String getUsername() {
     return username;
   }
-  
+
   public void addRole(Role role) {
     roles.add(role);
+  }
+
+  public void removeRole(Role role) {
+    roles.remove(role);
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj)
+      return true;
+    if (!(obj instanceof Customer))
+      return false;
+    Customer customer = (Customer) obj;
+    return Objects.equals(id, customer.id);
+
   }
 
   public String toString() {

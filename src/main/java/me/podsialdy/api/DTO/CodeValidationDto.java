@@ -25,10 +25,10 @@ import lombok.Setter;
 @Setter
 public class CodeValidationDto {
  
-    @NotNull(message = "Code cannot be null")
-    @NotBlank(message = "Code cfannot be blank")
-    @NotEmpty(message = "Code invalid")
-    @Pattern(regexp = "[0-9]{6}", message = "Code invalid")
+    @NotNull
+    @NotBlank
+    @NotEmpty
+    @Pattern(regexp = "[0-9]{6}", message = "Invalid format")
     private String code;
 
 }

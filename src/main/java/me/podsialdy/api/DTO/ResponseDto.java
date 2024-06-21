@@ -11,13 +11,18 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+/**
+ * Represents a Data Transfer Object (DTO) for a response.
+ * Contains fields for code, message, and timestamp.
+ */
 @Getter
 @Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class ResponseDto {
-    
+
+    @NotNull
     @Pattern(regexp = "[0-9]{3}", message = "Code error invalid")
     private int code;
 
@@ -26,7 +31,7 @@ public class ResponseDto {
     private String message;
 
     @Builder.Default
-    private Instant timestamp = Instant.now(); 
+    private Instant timestamp = Instant.now();
 
     public ResponseDto(String message, int code) {
         this.message = message;
@@ -35,4 +40,3 @@ public class ResponseDto {
     }
 
 }
-

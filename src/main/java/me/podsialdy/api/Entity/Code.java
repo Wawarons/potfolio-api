@@ -2,6 +2,7 @@ package me.podsialdy.api.Entity;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Objects;
 import java.util.UUID;
 
 import jakarta.persistence.Entity;
@@ -21,8 +22,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 /**
- * <p>Representation of validation code used to validate user's authentication</p>
- * <p>This code is use for validate user's authentication</p> 
+ * Representation of validation code used to validate user's authentication
+ * This code is use for validate user's authentication
  * 
  */
 @Entity
@@ -59,5 +60,24 @@ public class Code {
     @NotNull
     @Builder.Default
     private Instant createdAt = Instant.now();
+
+    public String toString() {
+        return "Code{" +
+                "id=" + id +
+                ", code='" + code + '\'' +
+                ", customer=" + customer.getUsername() +
+                '}';
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      if (this == obj)
+        return true;
+      if (!(obj instanceof Code))
+        return false;
+      Code code = (Code) obj;
+      return Objects.equals(id, code.id);
+  
+    }
 
 }

@@ -3,7 +3,10 @@ package me.podsialdy.api.Security;
 import java.io.IOException;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+
+import com.auth0.jwt.interfaces.DecodedJWT;
 
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
@@ -27,8 +30,15 @@ import me.podsialdy.api.Service.JwtService;
 @Component
 public class JwtCodeFilter implements Filter {
 
+    @Value("${jwt.scope.pre_auth}")
+    private String preAuthScope;
+
+    private final JwtService jwtService;
+
     @Autowired
-    private JwtService jwtService;
+    public JwtCodeFilter(JwtService jwtService) {
+        this.jwtService = jwtService;
+    }
 
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
@@ -37,13 +47,17 @@ public class JwtCodeFilter implements Filter {
         HttpServletResponse httpResponse = (HttpServletResponse) response;
         String token = getAccessToken(httpRequest);
 
-        if (token == null || !jwtService.verifyToken(token) || !jwtService.getScope(token).equals("pre_auth")) {
+        if (token == null || !jwtService.verifyToken(token) || !checkClaimValue(token, preAuthScope)) {
             httpResponse.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized");
             return;
         }
         ;
 
         chain.doFilter(httpRequest, httpResponse);
+    }
+
+    private boolean checkClaimValue(String token, String value) {
+        return jwtService.getScope(token).equals(value);
     }
 
     /**

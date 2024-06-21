@@ -35,31 +35,29 @@ import me.podsialdy.api.Service.RoleService;
 @Slf4j
 public class AuthController {
 
-  @Autowired
   private PasswordEncoder passwordEncoder;
-
-  @Autowired
   private CustomerRepository customerRepository;
-
-  @Autowired
   private RoleService roleService;
-
-  @Autowired
   private AuthenticationManager authenticationManager;
-
-  @Autowired
   private JwtService jwtService;
-
-  @Autowired
   private CookieService cookieService;
-
-  @Autowired
   private CodeService codeService;
 
+  @Autowired
+  public AuthController(PasswordEncoder passwordEncoder, CustomerRepository customerRepository, RoleService roleService,
+      AuthenticationManager authenticationManager, JwtService jwtService, CookieService cookieService,
+      CodeService codeService) {
+    this.passwordEncoder = passwordEncoder;
+    this.customerRepository = customerRepository;
+    this.roleService = roleService;
+    this.authenticationManager = authenticationManager;
+    this.jwtService = jwtService;
+    this.cookieService = cookieService;
+    this.codeService = codeService;
+  }
+
   /**
-   * <p>
    * Endpoint for register a new user
-   * </p>
    *
    * @param customerRegisterDto {@link me.podsialdy.api.DTO.CustomerRegisterDto}
    *                            user's informations
@@ -91,14 +89,16 @@ public class AuthController {
     customerRepository.save(customer);
     log.info("New registration for customer: {}", customer.getId());
 
-
     return new ResponseEntity<String>("User register successfully", HttpStatus.CREATED);
 
   }
 
+  /**
+   * Controller class for handling authentication related endpoints.
+   * Includes methods for user registration, user login, and user logout.
+   */
   @PostMapping(path = "login")
   public ResponseEntity<?> login(@Valid @RequestBody LoginDto loginDto, HttpServletResponse response) {
-    log.info("Customer {}", loginDto.getUsername());
     Customer customer = customerRepository.findByUsernameOrEmail(loginDto.getUsername())
         .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
@@ -111,12 +111,18 @@ public class AuthController {
       codeService.sendCodeTo(customer);
 
     } catch (BadCredentialsException e) {
-      return new ResponseEntity<>(new ResponseDto("Bad credentials", HttpStatus.NOT_FOUND.value()), HttpStatus.NOT_FOUND);
+      return new ResponseEntity<>(new ResponseDto("Bad credentials", HttpStatus.NOT_FOUND.value()),
+          HttpStatus.NOT_FOUND);
     }
 
     return ResponseEntity.ok().build();
   }
 
+  /**
+   * Registers a new user with the provided information.
+   * 
+   * @param customerRegisterDto the DTO containing registration information
+   */
   @PostMapping(path = "logout")
   public ResponseEntity<?> logout(HttpServletResponse response) {
     cookieService.removeAccessToken(response);

@@ -1,6 +1,7 @@
 package me.podsialdy.api.Service;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
@@ -9,14 +10,28 @@ import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.extern.slf4j.Slf4j;
 import me.podsialdy.api.Entity.Customer;
+import me.podsialdy.api.Utils.EmailContent;
 
 @Service
 @Slf4j
 public class EmailService {
 
-    @Autowired
+    @Value("${spring.mail.username}")
+    private String hostEmail;
+
     private JavaMailSender javaMailSender;
 
+    @Autowired
+    public EmailService(JavaMailSender javaMailSender) {
+        this.javaMailSender = javaMailSender;
+    }
+
+    /**
+     * Sends a validation code to the specified customer via email.
+     * 
+     * @param customer the customer to whom the validation code will be sent
+     * @param code     the validation code to be included in the email message
+     */
     public void sendValidationCode(Customer customer, String code) {
 
         try {
@@ -24,26 +39,18 @@ public class EmailService {
 
             MimeMessageHelper helper = new MimeMessageHelper(message, "UTF-8");
 
-            String messageContent = "<html><body>"
-                    + "<h2 style='color: #fcb974;'>Votre code de validation</h2>"
-                    + "<p>Une tentative de connexion à votre compte a été détectée.</p>"
-                    + "<p>Utilisez le code suivant pour valider votre connexion :</p>"
-                    + "<h3 style='background-color: #fcb974; color: white; padding: 10px; border-radius: 5px; display: inline-block;'>"
-                    + code + "</h3>"
-                    + "<p>Si ce n'était pas vous, veuillez sécuriser votre compte immédiatement.</p>"
-                    + "<p>Cordialement,<br>Votre équipe de sécurité</p>"
-                    + "</body></html>";
+            String messageContent = String.format(EmailContent.VALIDATION_CODE_MESSAGE, code);
 
-            helper.setFrom("portfolio-api@outlook.com");
+            helper.setFrom(hostEmail);
             helper.setTo(customer.getEmail());
-            helper.setSubject("Code de validation");
+            helper.setSubject(EmailContent.VALIDATION_CODE_SUBJECT);
             helper.setText(messageContent, true);
 
-            // Envoyer le message
             javaMailSender.send(message);
             log.info("Code validation send to customer {}", customer.getId());
 
         } catch (MessagingException mex) {
+            log.error("Error sending validation code to customer {}", customer.getId());
             mex.printStackTrace();
         }
     }

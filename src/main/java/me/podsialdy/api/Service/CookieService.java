@@ -16,11 +16,8 @@ public class CookieService {
         log.info("Attempt to add cookie access token");
         Cookie accessTokenCookie = new Cookie("token", token);
         accessTokenCookie.setHttpOnly(true);
-        // TODO Set up to true for production
-        accessTokenCookie.setSecure(false);
+        accessTokenCookie.setSecure(false); // TODO Set up to true for production
         accessTokenCookie.setPath("/");
-        // TODO Check if -1 is for session
-        // accessTokenCookie.setMaxAge(-1);
         response.addCookie(accessTokenCookie);
         log.info("Cookie access token added");
     }
@@ -29,8 +26,7 @@ public class CookieService {
         log.info("Attempt to delete cookie access token");
         Cookie accessTokenCookie = new Cookie("token", null);
         accessTokenCookie.setHttpOnly(true);
-        // TODO Set up to true for production
-        accessTokenCookie.setSecure(false);
+        accessTokenCookie.setSecure(false); // TODO Set up to true for production
         accessTokenCookie.setPath("/");
         accessTokenCookie.setMaxAge(0);
         response.addCookie(accessTokenCookie);

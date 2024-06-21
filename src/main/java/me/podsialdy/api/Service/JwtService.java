@@ -48,6 +48,8 @@ public class JwtService {
 
     public String grantAccessToken(String token) throws JWTVerificationException {
 
+        log.info("Attempt to grant access token");
+
         if (!verifyToken(token))
             throw new JWTVerificationException("Invalid token");
 
@@ -59,6 +61,8 @@ public class JwtService {
         .withExpiresAt(Instant.now().plusSeconds(60*10))
         .withClaim("scope", "auth")
         .sign(Algorithm.HMAC256(secretKey));
+
+        log.info("Token is granted {}", jwt);
 
         return jwt;
     }

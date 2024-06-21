@@ -1,13 +1,14 @@
 package me.podsialdy.api.Repository;
 
 import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
 import me.podsialdy.api.Entity.Customer;
 
-public interface CustomerRepository extends JpaRepository<Customer, String> {
+public interface CustomerRepository extends JpaRepository<Customer, UUID> {
 
   //find user by email 
   Optional<Customer> findByEmail(String email);

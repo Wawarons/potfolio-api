@@ -21,17 +21,19 @@ import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import me.podsialdy.api.DTO.CustomerRegisterDto;
 import me.podsialdy.api.DTO.LoginDto;
+import me.podsialdy.api.DTO.ResponseDto;
 import me.podsialdy.api.Entity.Customer;
 import me.podsialdy.api.Entity.RoleEnum;
 import me.podsialdy.api.Repository.CustomerRepository;
+import me.podsialdy.api.Service.CodeService;
 import me.podsialdy.api.Service.CookieService;
 import me.podsialdy.api.Service.JwtService;
 import me.podsialdy.api.Service.RoleService;
 
 @RestController
-@RequestMapping(path = "user")
+@RequestMapping(path = "auth")
 @Slf4j
-public class CustomerController {
+public class AuthController {
 
   @Autowired
   private PasswordEncoder passwordEncoder;
@@ -50,6 +52,9 @@ public class CustomerController {
 
   @Autowired
   private CookieService cookieService;
+
+  @Autowired
+  private CodeService codeService;
 
   /**
    * <p>
@@ -86,6 +91,7 @@ public class CustomerController {
     customerRepository.save(customer);
     log.info("New registration for customer: {}", customer.getId());
 
+
     return new ResponseEntity<String>("User register successfully", HttpStatus.CREATED);
 
   }
@@ -102,19 +108,20 @@ public class CustomerController {
       log.info("Customer {} is authenticated", customer.getId());
       String jwt = jwtService.generateToken(customer);
       cookieService.addAccesstoken(response, jwt);
+      codeService.sendCodeTo(customer);
 
     } catch (BadCredentialsException e) {
-      return new ResponseEntity<>("Bad credentials", HttpStatus.BAD_REQUEST);
+      return new ResponseEntity<>(new ResponseDto("Bad credentials", HttpStatus.NOT_FOUND.value()), HttpStatus.NOT_FOUND);
     }
 
-    return new ResponseEntity<>("User authenticated", HttpStatus.OK);
+    return ResponseEntity.ok().build();
   }
 
   @PostMapping(path = "logout")
   public ResponseEntity<?> logout(HttpServletResponse response) {
     cookieService.removeAccessToken(response);
     log.info("User deconnected");
-    return new ResponseEntity<>("User logout", HttpStatus.OK);
+    return ResponseEntity.ok().build();
   }
 
 }

@@ -20,6 +20,7 @@ import me.podsialdy.api.Repository.CustomerRepository;
 import me.podsialdy.api.Service.CodeService;
 import me.podsialdy.api.Service.CookieService;
 import me.podsialdy.api.Service.JwtService;
+import me.podsialdy.api.Service.RefreshTokenService;
 
 /**
  * CodeController it's a {@link RestController} that handles endpoints related
@@ -34,14 +35,16 @@ public class CodeController {
     private CookieService cookieService;
     private CustomerRepository customerRepository;
     private CodeService codeService;
+    private RefreshTokenService refreshTokenService;
 
     @Autowired
     public CodeController(JwtService jwtService, CookieService cookieService, CustomerRepository customerRepository,
-            CodeService codeService) {
+            CodeService codeService, RefreshTokenService refreshTokenService) {
         this.jwtService = jwtService;
         this.cookieService = cookieService;
         this.customerRepository = customerRepository;
         this.codeService = codeService;
+        this.refreshTokenService = refreshTokenService;
     }
 
     /**
@@ -79,7 +82,8 @@ public class CodeController {
             }
             String jwt = jwtService.grantAccessToken(token);
             cookieService.addAccesstoken(response, jwt);
-
+            log.info("The jwt value is: {}", jwt);
+            refreshTokenService.initRefreshToken(customer, jwtService.getSession(jwt));
             log.info("Customer {} code validate", customer.getId());
             return ResponseEntity.ok().build();
         }

@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -42,6 +43,23 @@ public class GlobalExceptionHandle {
                         .message(violations.toString())
                         .build());
 
+    }
+
+    /**
+     * <p>Handles UsernameNotFoundException by returning a
+     * ResponseEntity with a custom ResponseDto.</p>
+     * @param ex the UsernameNotFoundException to handle
+     * @return a ResponseEntity with a custom ResponseDto
+     */
+    @ExceptionHandler(UsernameNotFoundException.class)
+    public ResponseEntity<ResponseDto> handleUsernameNotFoundException(UsernameNotFoundException ex) {
+        log.error("User not found: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(ResponseDto.builder()
+                        .code(HttpStatus.NOT_FOUND.value())
+                        .message("Bad credentials")
+                        .build());
     }
 
 }

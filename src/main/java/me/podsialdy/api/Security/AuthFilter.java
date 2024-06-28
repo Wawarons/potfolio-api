@@ -1,6 +1,10 @@
 package me.podsialdy.api.Security;
 
 import java.io.IOException;
+import java.time.Instant;
+import java.util.Date;
+import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -14,6 +18,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.auth0.jwt.JWT;
+import com.auth0.jwt.exceptions.JWTDecodeException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 
 import io.micrometer.common.util.StringUtils;
@@ -23,6 +28,11 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
+import me.podsialdy.api.Entity.Customer;
+import me.podsialdy.api.Entity.RefreshToken;
+import me.podsialdy.api.Repository.CustomerRepository;
+import me.podsialdy.api.Repository.RefreshTokenRepository;
+import me.podsialdy.api.Service.CookieService;
 import me.podsialdy.api.Service.CustomerUserDetailsService;
 import me.podsialdy.api.Service.JwtService;
 
@@ -40,9 +50,6 @@ import me.podsialdy.api.Service.JwtService;
 @Slf4j
 public class AuthFilter extends OncePerRequestFilter {
 
-    private final JwtService jwtService;
-    private CustomerUserDetailsService customerUserDetailsService;
-
     @Value("${jwt.cookie.name}")
     private String cookieTokenName;
 
@@ -50,12 +57,17 @@ public class AuthFilter extends OncePerRequestFilter {
     private String authScope;
 
     @Autowired
-    public AuthFilter(JwtService jwtService, CustomerUserDetailsService customerUserDetailsService) {
-        this.jwtService = jwtService;
-        this.customerUserDetailsService = customerUserDetailsService;
-    }
+    private JwtService jwtService;
+    @Autowired
+    private CustomerUserDetailsService customerUserDetailsService;
+    @Autowired
+    private RefreshTokenRepository refreshTokenRepository;
+    @Autowired
+    private CustomerRepository customerRepository;
+    @Autowired
+    private CookieService cookieService;
 
-    private final String[] pathsToFilter = { "/code/auth" };
+    private final String[] pathsToFilter = { "/auth/" };
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -64,20 +76,64 @@ public class AuthFilter extends OncePerRequestFilter {
         log.info("Filtering request for authentication");
         String token = getAccessToken(request);
 
-        if (StringUtils.isEmpty(token) || !jwtService.verifyToken(token)) {
-            log.error("Invalid token");
-            filterChain.doFilter(request, response);
+        if (StringUtils.isEmpty(token)) {
+            log.error("Token is empty");
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
             return;
         }
 
         try {
+
             DecodedJWT jwt = JWT.decode(token);
 
-            if (jwt.getClaim("scope").isNull() || !checkClaimValue(token, authScope)) {
-                log.error("Invalid token scope");
-                filterChain.doFilter(request, response);
+            if (jwt.getClaim("session_id").isNull() || jwt.getClaim("scope").isNull()
+                    || !jwt.getClaim("scope").asString().equals(authScope)) {
+                log.error("Invalid token");
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
                 return;
             }
+
+            if (isTokenExpired(jwt)) {
+
+                log.info("Token is expired");
+
+                String sessionId = jwtService.getSession(token);
+
+                Optional<RefreshToken> refreshToken = refreshTokenRepository
+                        .findBySessionId(UUID.fromString(sessionId));
+
+                log.info("Refresh token session: {}", sessionId);
+
+                if (refreshToken.isEmpty() || refreshToken.get().isLocked()
+                        || !refreshToken.get().getSessionId().toString().equals(sessionId)) {
+                    log.error("Refresh token not found or invalid");
+                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+                    return;
+                }
+
+                Optional<Customer> customer = customerRepository.findByUsername(jwt.getSubject());
+
+                if (customer.isEmpty()) {
+                    log.error("Customer not found for the subject {}", jwt.getSubject());
+                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+                    return;
+                }
+
+                token = jwtService.refreshToken(token);
+                
+                cookieService.addAccesstoken(response, token);
+                log.info("Update access token for customer {}", customer.get().getUsername());
+
+                jwt = JWT.decode(token);
+
+            }
+
+            if (!jwtService.verifyToken(token)) {
+                log.error("Invalid token");
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "invalid token");
+                return;
+            }
+            ;
 
             Authentication authUser = authenticateUser(jwt.getSubject());
             SecurityContextHolder.getContext().setAuthentication(authUser);
@@ -85,9 +141,13 @@ public class AuthFilter extends OncePerRequestFilter {
             log.info("Customer {} is authenticated", jwt.getSubject());
 
             filterChain.doFilter(request, response);
+        } catch (JWTDecodeException e) {
+            log.error("Cannot decode the token: {}", e.getMessage());
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Cannot decode the token");
+            return;
         } catch (Exception e) {
-            log.error("Invalid token");
-            filterChain.doFilter(request, response);
+            log.error("An unexpected error occurred: {}", e.getMessage());
+            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "An unexpected error occurred");
             return;
         }
     }
@@ -137,8 +197,11 @@ public class AuthFilter extends OncePerRequestFilter {
         return new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
     }
 
-    private boolean checkClaimValue(String token, String value) {
-        return jwtService.getScope(token).equals(value);
+    /**
+     * Check token's expiration 
+     */
+    private boolean isTokenExpired(DecodedJWT jwt) {
+        return jwt.getExpiresAt().before(Date.from(Instant.now()));
     }
 
     @Override
@@ -146,7 +209,7 @@ public class AuthFilter extends OncePerRequestFilter {
         String path = request.getRequestURI();
         for (String pathToNotFilter : pathsToFilter) {
             if (path.contains(pathToNotFilter)) {
-                System.out.println("Not filter");
+                log.info("Path {} not filtered", path);
                 return true;
             }
         }

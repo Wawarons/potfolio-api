@@ -4,8 +4,10 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -18,6 +20,7 @@ import com.auth0.jwt.interfaces.DecodedJWT;
 import lombok.extern.slf4j.Slf4j;
 import me.podsialdy.api.Entity.Customer;
 import me.podsialdy.api.Entity.Role;
+import me.podsialdy.api.Repository.RefreshTokenRepository;
 
 /**
  * Service class for handling JWT token generation, verification, and access
@@ -43,6 +46,9 @@ public class JwtService {
     @Value("${jwt.scope.auth}")
     private String authScope;
 
+    @Autowired
+    private RefreshTokenRepository refreshTokenRepository;
+
     /**
      * Generates a JWT token for the provided customer.
      * 
@@ -59,6 +65,7 @@ public class JwtService {
                 .withArrayClaim("roles", getUserRoles(customer.getRoles()))
                 .withExpiresAt(Instant.now().plus(15L, ChronoUnit.MINUTES))
                 .withClaim("scope", preAuthScope)
+                .withClaim("session_id", generateUUID().toString())
                 .sign(Algorithm.HMAC256(secretKey));
 
         log.info("token generate for user {}", customer.getId());
@@ -89,6 +96,7 @@ public class JwtService {
                 .withArrayClaim("roles", decodedJWT.getClaim("roles").asArray(String.class))
                 .withExpiresAt(Instant.now().plusSeconds(60 * 10))
                 .withClaim("scope", authScope)
+                .withClaim("session_id", decodedJWT.getClaim("session_id").asString())
                 .sign(Algorithm.HMAC256(secretKey));
 
         log.info("Token is granted {}", jwt);
@@ -123,6 +131,17 @@ public class JwtService {
     }
 
     /**
+     * Retrieves the session ID from the provided JWT token.
+     * 
+     * @param token The JWT token from which to extract the session ID
+     * @return The session ID extracted from the token
+     */
+    public String getSession(String token) {
+        DecodedJWT decodedJWT = JWT.decode(token);
+        return decodedJWT.getClaim("session_id").asString();
+    }
+
+    /**
      * Verifies the validity of the provided JWT token.
      * 
      * @param token The JWT token to be verified
@@ -154,6 +173,53 @@ public class JwtService {
         List<String> rolesList = roles.stream().map(role -> role.getRole()).collect(Collectors.toList());
         String[] rolesArray = rolesList.toArray(new String[0]);
         return rolesArray;
+    }
+
+    /**
+     * Generates a unique UUID string that does not exist in the
+     * refreshTokenRepository.
+     * Attempts up to a maximum of 10 times to generate a unique UUID.
+     *
+     * @return A unique UUID string
+     * @throws RuntimeException if unable to generate a unique UUID after 10
+     *                          attempts
+     */
+    public UUID generateUUID() {
+        UUID uuid;
+        int attempts = 0;
+        final int maxAttempts = 10;
+
+        do {
+            if (attempts >= maxAttempts) {
+                log.error("Failed to generate a unique UUID after {} attempts", maxAttempts);
+                throw new RuntimeException("Unable to generate unique UUID");
+            }
+            uuid = UUID.randomUUID();
+            attempts++;
+        } while (refreshTokenRepository.findBySessionId(uuid).isPresent());
+
+        log.info("Generated unique UUID after {} attempts", attempts);
+        return uuid;
+    }
+
+    public String refreshToken(String token) {
+
+        log.info("Attempt to grant access token");
+
+        DecodedJWT decodedJWT = JWT.decode(token);
+        String jwt = JWT.create()
+                .withIssuer(decodedJWT.getIssuer())
+                .withSubject(decodedJWT.getSubject())
+                .withArrayClaim("roles", decodedJWT.getClaim("roles").asArray(String.class))
+                .withExpiresAt(Instant.now().plusSeconds(60 * 10))
+                .withClaim("scope", authScope)
+                .withClaim("session_id", decodedJWT.getClaim("session_id").asString())
+                .sign(Algorithm.HMAC256(secretKey));
+
+        log.info("Refresh token create {}", jwt);
+
+        return jwt;
+
     }
 
 }

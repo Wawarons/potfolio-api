@@ -8,7 +8,6 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.auth0.jwt.JWT;
@@ -21,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import me.podsialdy.api.Entity.Customer;
 import me.podsialdy.api.Entity.Role;
 import me.podsialdy.api.Repository.RefreshTokenRepository;
+import me.podsialdy.api.Utils.JwtConfig;
 
 /**
  * Service class for handling JWT token generation, verification, and access
@@ -34,20 +34,30 @@ import me.podsialdy.api.Repository.RefreshTokenRepository;
 @Slf4j
 public class JwtService {
 
-    @Value("${jwt.secret}")
-    private String secretKey;
-
-    @Value("${jwt.issuer}")
-    private String issuer;
-
-    @Value("${jwt.scope.pre_auth}")
-    private String preAuthScope;
-
-    @Value("${jwt.scope.auth}")
-    private String authScope;
+    private final RefreshTokenRepository refreshTokenRepository;
+    private final JwtConfig jwtConfig;
+    private final long EXPIRATION_DURATION;
+    private final String CLAIM_ROLES;
+    private final String CLAIM_SCOPE;
+    private final String CLAIM_SESSION;
+    private final String AUTH_SCOPE;
+    private final String ISSUER;
+    private final String SECRET_KEY;
+    private final String PRE_AUTH_SCOPE;
 
     @Autowired
-    private RefreshTokenRepository refreshTokenRepository;
+    public JwtService(RefreshTokenRepository refreshTokenRepository, JwtConfig jwtConfig) {
+        this.refreshTokenRepository = refreshTokenRepository;
+        this.jwtConfig = jwtConfig;
+        this.EXPIRATION_DURATION = jwtConfig.getExpirationDuration();
+        this.CLAIM_ROLES = jwtConfig.getClaimRoles();
+        this.CLAIM_SCOPE = jwtConfig.getClaimScope();
+        this.CLAIM_SESSION = jwtConfig.getClaimSession();
+        this.AUTH_SCOPE = jwtConfig.getAuthScope();
+        this.ISSUER = jwtConfig.getIssuer();
+        this.SECRET_KEY = jwtConfig.getSecretKey();
+        this.PRE_AUTH_SCOPE = jwtConfig.getPreAuthScope();
+    }
 
     /**
      * Generates a JWT token for the provided customer.
@@ -58,21 +68,21 @@ public class JwtService {
 
         log.info("Generate token for user {}", customer.getId());
 
-        String jwt = JWT
-                .create()
-                .withIssuer(issuer)
-                .withSubject(customer.getUsername())
-                .withArrayClaim("roles", getUserRoles(customer.getRoles()))
-                .withExpiresAt(Instant.now().plus(15L, ChronoUnit.MINUTES))
-                .withClaim("scope", preAuthScope)
-                .withClaim("session_id", generateUUID().toString())
-                .sign(Algorithm.HMAC256(secretKey));
+        try {
 
-        log.info("token generate for user {}", customer.getId());
+            String jwt = createToken(customer.getUsername(), getUserRoles(customer.getRoles()),
+                    PRE_AUTH_SCOPE, generateUUID(), EXPIRATION_DURATION);
 
-        log.info("JWt generate {}", jwt);
+            log.info("token generate for user {}", customer.getId());
 
-        return jwt;
+            log.info("JWt generate {}", jwt);
+
+            return jwt;
+        } catch (Exception e) {
+            log.error("Error while generating token", e);
+        }
+
+        return null;
     }
 
     /**
@@ -89,19 +99,19 @@ public class JwtService {
         if (!verifyToken(token))
             throw new JWTVerificationException("Invalid token");
 
-        DecodedJWT decodedJWT = JWT.decode(token);
-        String jwt = JWT.create()
-                .withIssuer(decodedJWT.getIssuer())
-                .withSubject(decodedJWT.getSubject())
-                .withArrayClaim("roles", decodedJWT.getClaim("roles").asArray(String.class))
-                .withExpiresAt(Instant.now().plusSeconds(60 * 10))
-                .withClaim("scope", authScope)
-                .withClaim("session_id", decodedJWT.getClaim("session_id").asString())
-                .sign(Algorithm.HMAC256(secretKey));
+        try {
 
-        log.info("Token is granted {}", jwt);
+            String jwt = createToken(getSubject(token), getRoles(token),
+                    AUTH_SCOPE, getSession(token), EXPIRATION_DURATION);
 
-        return jwt;
+            log.info("Token is granted {}", jwt);
+
+            return jwt;
+        } catch (Exception e) {
+            log.error("Error while granting aceess token", e);
+        }
+
+        return null;
     }
 
     /**
@@ -127,7 +137,22 @@ public class JwtService {
         if (!verifyToken(token))
             throw new JWTVerificationException("Invalid token");
         DecodedJWT decodedJWT = JWT.decode(token);
-        return decodedJWT.getClaim("scope").asString();
+        return decodedJWT.getClaim(CLAIM_SCOPE).asString();
+    }
+
+    /**
+     * 
+     * get the claim that contains user's roles
+     * 
+     * @param token
+     * @return list of user's roles
+     * @throws JWTVerificationException
+     */
+    public String[] getRoles(String token) throws JWTVerificationException {
+        if (!verifyToken(token))
+            throw new JWTVerificationException("Invalid token");
+        DecodedJWT decodedJWT = JWT.decode(token);
+        return decodedJWT.getClaim(CLAIM_ROLES).asArray(String.class);
     }
 
     /**
@@ -136,9 +161,9 @@ public class JwtService {
      * @param token The JWT token from which to extract the session ID
      * @return The session ID extracted from the token
      */
-    public String getSession(String token) {
+    public UUID getSession(String token) {
         DecodedJWT decodedJWT = JWT.decode(token);
-        return decodedJWT.getClaim("session_id").asString();
+        return decodedJWT.getClaim(CLAIM_SESSION).as(UUID.class);
     }
 
     /**
@@ -148,19 +173,17 @@ public class JwtService {
      * @return true if the token is valid, false otherwise
      */
     public boolean verifyToken(String token) {
-        JWTVerifier jwtVerifier = JWT.require(Algorithm.HMAC256(secretKey)).withIssuer(issuer).build();
+        JWTVerifier jwtVerifier = JWT.require(Algorithm.HMAC256(SECRET_KEY)).withIssuer(ISSUER).build();
         try {
             log.info("Token validation in progress...");
             jwtVerifier.verify(token);
             log.info("Token is valid");
             return true;
-        } catch (JWTVerificationException e) {
-            log.warn("Invalid token : {}", e);
-            return false;
         } catch (Exception e) {
-            log.error("An error occured during validation token: {}", e);
-            return false;
+            log.error("Error while verifying the token", e);
         }
+
+        return false;
     }
 
     /**
@@ -202,24 +225,87 @@ public class JwtService {
         return uuid;
     }
 
+    /**
+     * Creates a new refresh token based on the provided token.
+     * 
+     * @param token The JWT token from which to create the refresh token
+     * @return The newly generated refresh token, or null if an error occurs
+     */
     public String refreshToken(String token) {
 
-        log.info("Attempt to grant access token");
+        log.info("Attempt to create a refresh token");
 
-        DecodedJWT decodedJWT = JWT.decode(token);
-        String jwt = JWT.create()
-                .withIssuer(decodedJWT.getIssuer())
-                .withSubject(decodedJWT.getSubject())
-                .withArrayClaim("roles", decodedJWT.getClaim("roles").asArray(String.class))
-                .withExpiresAt(Instant.now().plusSeconds(60 * 10))
-                .withClaim("scope", authScope)
-                .withClaim("session_id", decodedJWT.getClaim("session_id").asString())
-                .sign(Algorithm.HMAC256(secretKey));
+        try {
+            String jwt = createToken(getSubject(token), getRoles(token),
+                    getScope(token), getSession(token), EXPIRATION_DURATION);
 
-        log.info("Refresh token create {}", jwt);
+            log.info("Refresh token create {}", jwt);
 
-        return jwt;
+            return jwt;
 
+        } catch (Exception e) {
+            log.error("Error while creating a refresh token", e);
+        }
+
+        return null;
+
+    }
+
+    /**
+     * Creates a user token based on the provided token.
+     * 
+     * @param token The JWT token from which to create the user token
+     * @return The newly generated user token
+     */
+    public String getUserToken(String token) {
+
+        log.info("Attempt to create user token");
+
+        try {
+            String authState = getScope(token);
+
+            String userAuthState = authState.equals(AUTH_SCOPE) ? "auth"
+                    : authState.equals(PRE_AUTH_SCOPE) ? "pre_auth" : "";
+
+            String jwt = JWT.create()
+                    .withIssuer(ISSUER)
+                    .withSubject(getSubject(token))
+                    .withArrayClaim(CLAIM_ROLES, getRoles(token))
+                    .withExpiresAt(Instant.now().plusSeconds(EXPIRATION_DURATION))
+                    .withClaim("auth_state", userAuthState)
+                    .sign(Algorithm.HMAC256(SECRET_KEY));
+
+            log.info("User info token create {}", jwt);
+
+            return jwt;
+        } catch (Exception e) {
+            log.error("Error while creating user info token", e);
+        }
+        return null;
+
+    }
+
+    /**
+     * Creates a JWT token based on the provided subject, roles, scope, session ID,
+     * and duration.
+     * 
+     * @param subject         The subject of the token
+     * @param roles           An array of roles associated with the token
+     * @param scope           The scope of the token
+     * @param sessionId       The session ID linked to the token
+     * @param durationMinutes The duration of the token validity in minutes
+     * @return The generated JWT token as a string
+     */
+    public String createToken(String subject, String[] roles, String scope, UUID sessionId, long durationMinutes) {
+
+        return JWT.create()
+                .withIssuer(ISSUER)
+                .withSubject(subject)
+                .withArrayClaim(CLAIM_ROLES, roles)
+                .withExpiresAt(Instant.now().plus(durationMinutes, ChronoUnit.MINUTES))
+                .withClaim(CLAIM_SCOPE, scope)
+                .withClaim(CLAIM_SESSION, sessionId.toString())
+                .sign(Algorithm.HMAC256(SECRET_KEY));
     }
 
 }

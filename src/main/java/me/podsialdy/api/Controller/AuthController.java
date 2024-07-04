@@ -107,7 +107,7 @@ public class AuthController {
           .authenticate(new UsernamePasswordAuthenticationToken(loginDto.getUsername(), loginDto.getPassword()));
       log.info("Customer {} is authenticated", customer.getId());
       String jwt = jwtService.generateToken(customer);
-      cookieService.addAccesstoken(response, jwt);
+      cookieService.addAccessToken(response, jwt);
       codeService.sendCodeTo(customer);
 
     } catch (BadCredentialsException e) {

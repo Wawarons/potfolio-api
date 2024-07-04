@@ -35,6 +35,7 @@ import me.podsialdy.api.Repository.RefreshTokenRepository;
 import me.podsialdy.api.Service.CookieService;
 import me.podsialdy.api.Service.CustomerUserDetailsService;
 import me.podsialdy.api.Service.JwtService;
+import me.podsialdy.api.Utils.JwtConfig;
 
 /**
  * This class is responsible for filtering requests for authentication based on
@@ -67,6 +68,10 @@ public class AuthFilter extends OncePerRequestFilter {
     @Autowired
     private CookieService cookieService;
 
+
+    @Autowired
+    private JwtConfig jwtConfig;
+
     private final String[] pathsToFilter = { "/auth/" };
 
     @Override
@@ -86,8 +91,8 @@ public class AuthFilter extends OncePerRequestFilter {
 
             DecodedJWT jwt = JWT.decode(token);
 
-            if (jwt.getClaim("session_id").isNull() || jwt.getClaim("scope").isNull()
-                    || !jwt.getClaim("scope").asString().equals(authScope)) {
+            if (jwt.getClaim("session_id").isNull() || jwt.getClaim(jwtConfig.getClaimScope()).isNull()
+                    || !jwt.getClaim(jwtConfig.getClaimScope()).asString().equals(authScope)) {
                 log.error("Invalid token");
                 response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
                 return;
@@ -97,15 +102,15 @@ public class AuthFilter extends OncePerRequestFilter {
 
                 log.info("Token is expired");
 
-                String sessionId = jwtService.getSession(token);
+                UUID sessionId = jwtService.getSession(token);
 
                 Optional<RefreshToken> refreshToken = refreshTokenRepository
-                        .findBySessionId(UUID.fromString(sessionId));
+                        .findBySessionId(sessionId);
 
                 log.info("Refresh token session: {}", sessionId);
 
                 if (refreshToken.isEmpty() || refreshToken.get().isLocked()
-                        || !refreshToken.get().getSessionId().toString().equals(sessionId)) {
+                        || !refreshToken.get().getSessionId().equals(sessionId)) {
                     log.error("Refresh token not found or invalid");
                     response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
                     return;
@@ -121,7 +126,7 @@ public class AuthFilter extends OncePerRequestFilter {
 
                 token = jwtService.refreshToken(token);
                 
-                cookieService.addAccesstoken(response, token);
+                cookieService.addAccessToken(response, token);
                 log.info("Update access token for customer {}", customer.get().getUsername());
 
                 jwt = JWT.decode(token);

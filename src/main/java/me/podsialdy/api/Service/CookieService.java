@@ -1,12 +1,13 @@
 package me.podsialdy.api.Service;
 
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
+import me.podsialdy.api.Utils.CookieConfig;
 
 /**
  * Service class for managing cookies related to access tokens.
@@ -17,14 +18,13 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class CookieService {
 
-    @Value("${jwt.cookie.name}")
-    private String cookieName;
+    
+    private CookieConfig cookieConfig;
 
-    @Value("${jwt.cookie.secure}")
-    private boolean cookieSecure;
-
-    @Value("${jwt.cookie.path}")
-    private String cookiePath;
+    @Autowired
+    public CookieService(CookieConfig cookieConfig) {
+        this.cookieConfig = cookieConfig;
+    }
 
     /**
      * Adds an access token to the response as a cookie.
@@ -33,13 +33,14 @@ public class CookieService {
      *                 added
      * @param token    the access token to be stored in the cookie
      */
-    public void addAccesstoken(HttpServletResponse response, String token) {
+    public void addAccessToken(HttpServletResponse response, String token) {
 
         log.info("Attempt to add cookie access token");
-        Cookie accessTokenCookie = new Cookie(cookieName, token);
+        Cookie accessTokenCookie = new Cookie(cookieConfig.getCookieName(), token);
         accessTokenCookie.setHttpOnly(true);
-        accessTokenCookie.setSecure(cookieSecure);
-        accessTokenCookie.setPath(cookiePath);
+        accessTokenCookie.setSecure(cookieConfig.isCookieSecure());
+        accessTokenCookie.setPath(cookieConfig.getCookiePath());
+        accessTokenCookie.setMaxAge(cookieConfig.getCookieAge());
         response.addCookie(accessTokenCookie);
         log.info("Cookie access token added");
     }
@@ -52,10 +53,10 @@ public class CookieService {
      */
     public void removeAccessToken(HttpServletResponse response) {
         log.info("Attempt to delete cookie access token");
-        Cookie accessTokenCookie = new Cookie("token", null);
-        accessTokenCookie.setHttpOnly(true);
-        accessTokenCookie.setSecure(false);
-        accessTokenCookie.setPath("/");
+        Cookie accessTokenCookie = new Cookie(cookieConfig.getCookieName(), null);
+        accessTokenCookie.setHttpOnly(cookieConfig.isCookieHttpOnly());
+        accessTokenCookie.setSecure(cookieConfig.isCookieSecure());
+        accessTokenCookie.setPath(cookieConfig.getCookiePath());
         accessTokenCookie.setMaxAge(0);
         response.addCookie(accessTokenCookie);
         log.info("Cookie access token deleted");
@@ -70,15 +71,20 @@ public class CookieService {
      */
     public String getAccessToken(HttpServletRequest request) {
 
+        log.info("Attempt to get access cookie...");
+
         Cookie[] cookies = request.getCookies();
         if (cookies != null) {
 
             for (Cookie cookie : cookies) {
-                if (cookie.getName().equals("token")) {
+                if (cookie.getName().equals(cookieConfig.getCookieName())) {
+                    log.info("Access cookie has been found");
                     return cookie.getValue();
                 }
             }
         }
+
+        log.warn("Cookie access not found");
         return null;
     }
 

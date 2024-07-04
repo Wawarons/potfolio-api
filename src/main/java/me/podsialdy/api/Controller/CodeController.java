@@ -81,7 +81,7 @@ public class CodeController {
                 customerRepository.save(customer);
             }
             String jwt = jwtService.grantAccessToken(token);
-            cookieService.addAccesstoken(response, jwt);
+            cookieService.addAccessToken(response, jwt);
             log.info("The jwt value is: {}", jwt);
             refreshTokenService.initRefreshToken(customer, jwtService.getSession(jwt));
             log.info("Customer {} code validate", customer.getId());

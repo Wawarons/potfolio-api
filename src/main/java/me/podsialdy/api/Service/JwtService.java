@@ -251,6 +251,39 @@ public class JwtService {
 
     }
 
+    /**
+     * Creates a user token based on the provided token.
+     * 
+     * @param token The JWT token from which to create the user token
+     * @return The newly generated user token
+     */
+    public String getUserToken(String token) {
+
+        log.info("Attempt to create user token");
+
+        try {
+            String authState = getScope(token);
+
+            String userAuthState = authState.equals(AUTH_SCOPE) ? "auth"
+                    : authState.equals(PRE_AUTH_SCOPE) ? "pre_auth" : "";
+
+            String jwt = JWT.create()
+                    .withIssuer(ISSUER)
+                    .withSubject(getSubject(token))
+                    .withArrayClaim(CLAIM_ROLES, getRoles(token))
+                    .withExpiresAt(Instant.now().plusSeconds(EXPIRATION_DURATION))
+                    .withClaim("auth_state", userAuthState)
+                    .sign(Algorithm.HMAC256(SECRET_KEY));
+
+            log.info("User info token create {}", jwt);
+
+            return jwt;
+        } catch (Exception e) {
+            log.error("Error while creating user info token", e);
+        }
+        return null;
+
+    }
 
     /**
      * Creates a JWT token based on the provided subject, roles, scope, session ID,

@@ -3,7 +3,6 @@ package me.podsialdy.api.Security;
 import java.io.IOException;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import jakarta.servlet.Filter;
@@ -15,6 +14,8 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import me.podsialdy.api.Service.JwtService;
+import me.podsialdy.api.Utils.CookieConfig;
+import me.podsialdy.api.Utils.JwtConfig;
 
 /**
  * This class represents a filter for handling JWT authentication in the API.
@@ -28,14 +29,15 @@ import me.podsialdy.api.Service.JwtService;
 @Component
 public class JwtCodeFilter implements Filter {
 
-    @Value("${jwt.scope.pre_auth}")
-    private String preAuthScope;
-
+    private final JwtConfig jwtConfig;
+    private final CookieConfig cookieConfig;
     private final JwtService jwtService;
 
     @Autowired
-    public JwtCodeFilter(JwtService jwtService) {
+    public JwtCodeFilter(JwtService jwtService, JwtConfig jwtConfig, CookieConfig cookieConfig) {
         this.jwtService = jwtService;
+        this.jwtConfig = jwtConfig;
+        this.cookieConfig = cookieConfig;
     }
 
     @Override
@@ -45,7 +47,7 @@ public class JwtCodeFilter implements Filter {
         HttpServletResponse httpResponse = (HttpServletResponse) response;
         String token = getAccessToken(httpRequest);
 
-        if (token == null || !jwtService.verifyToken(token) || !checkClaimValue(token, preAuthScope)) {
+        if (token == null || !jwtService.verifyToken(token) || !checkClaimValue(token, jwtConfig.getPreAuthScope())) {
             httpResponse.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized");
             return;
         }
@@ -69,7 +71,7 @@ public class JwtCodeFilter implements Filter {
         if (cookies != null) {
 
             for (Cookie cookie : cookies) {
-                if (cookie.getName().equals("token")) {
+                if (cookie.getName().equals(cookieConfig.getCookieName())) {
                     return cookie.getValue();
                 }
             }

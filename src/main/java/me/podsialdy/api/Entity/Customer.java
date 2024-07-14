@@ -66,6 +66,7 @@ public class Customer implements UserDetails {
   private String username;
   
   @Size(min = 12, max = 250, message = "Password size must be greater between 12 and 250")
+  @NotNull
   @Pattern(regexp = "(?=.*[a-z]+)(?=.*[A-Z]+)(?=.*[0-9]+)(?=.*[.*$_!\\-+@;:/\\\\|']+)[A-Za-z0-9.*$_!\\-+@;:/\\\\|']+", message = "Password wrong format")
   private String password;
 
@@ -77,7 +78,7 @@ public class Customer implements UserDetails {
   @OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
   @JoinTable(name = "customer_refresh_token", joinColumns = @JoinColumn(name = "customer_id", referencedColumnName = "id"), inverseJoinColumns = @JoinColumn(name = "refresh_token_id", referencedColumnName = "id"))
   @Builder.Default
-  private Set<Role> refreshToken = new HashSet<>();
+  private Set<RefreshToken> refreshToken = new HashSet<>();
 
   @NotNull
   @Builder.Default

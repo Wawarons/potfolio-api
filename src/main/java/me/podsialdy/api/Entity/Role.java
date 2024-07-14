@@ -50,8 +50,7 @@ public class Role {
         Role role = (Role) obj;
         
         return Objects.equals(this.id, role.id)
-            && Objects.equals(this.role, role.role)
-            && Objects.equals(this.createdAt, role.createdAt);
+            && Objects.equals(this.role, role.role);
 
     }
 

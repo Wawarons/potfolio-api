@@ -66,6 +66,7 @@ public class Code {
                 "id=" + id +
                 ", code='" + code + '\'' +
                 ", customer=" + customer.getUsername() +
+                ", isUsed=" + isUsed +
                 '}';
     }
 

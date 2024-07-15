@@ -54,5 +54,33 @@ public class RefreshToken {
     @NotNull
     @Builder.Default
     private Instant createdAt = Instant.now();
-    
+
+    @Override
+    public String toString() {
+        return "RefreshToken: \n\n  id: " + id +
+                "\n sessionId: " + sessionId +
+                "\n token: " + token +
+                "\n expiration: " + expiration +
+                "\n isLocked: " + isLocked +
+                "\n createdAt: " + createdAt;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+
+        if (obj == null || getClass() != obj.getClass())
+            return false;
+
+        RefreshToken refreshToken = (RefreshToken) obj;
+
+        return id != null && refreshToken.getId().equals(id);
+    }
+
+    @Override
+    public int hashCode() {
+        return id != null ? id.hashCode() : 0;
+    }
+
 }

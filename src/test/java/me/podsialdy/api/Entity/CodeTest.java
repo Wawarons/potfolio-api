@@ -7,6 +7,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Set;
 import java.util.UUID;
 
@@ -54,6 +55,53 @@ public class CodeTest {
         Code code = new Code(UUID.randomUUID(), null, customer, false, null, Instant.now());
         Set<ConstraintViolation<Code>> constraints = validator.validate(code);
         assertFalse(constraints.isEmpty());
+    }
+
+    @Test
+    public void test_code_setter() {
+
+        UUID id = UUID.randomUUID();
+        String codeValue = "123456";
+        Customer customer = mock(Customer.class);
+        Instant now = Instant.now();
+        Instant expiration = now.plus(5L, ChronoUnit.MINUTES);
+
+        
+        Code code = new Code();
+        
+        code.setId(id);
+        code.setCode(codeValue);
+        code.setCustomer(customer);
+        code.setExpiration(expiration);
+        code.setUsed(false);
+        code.setCreatedAt(now);
+
+        assertEquals(id, code.getId());
+        assertEquals(codeValue, code.getCode());
+        assertEquals(customer, code.getCustomer());
+        assertEquals(expiration, code.getExpiration());
+        assertEquals(false, code.isUsed());
+        assertEquals(now, code.getCreatedAt());
+
+    }
+
+    @Test
+    public void test_code_builder() {
+        UUID idValue = UUID.randomUUID();
+        String codeValue = "123456";
+        Customer customer = mock(Customer.class);
+        Instant nowTime = Instant.now();
+        Instant expirationTime = nowTime.plus(5L, ChronoUnit.MINUTES);
+
+        Code code = Code.builder().id(idValue).code(codeValue).customer(customer).isUsed(false).expiration(expirationTime).createdAt(nowTime).build();
+
+        assertEquals(idValue, code.getId());
+        assertEquals(codeValue, code.getCode());
+        assertEquals(false, code.isUsed());
+        assertEquals(customer, code.getCustomer());
+        assertEquals(nowTime, code.getCreatedAt());
+        assertEquals(expirationTime, code.getExpiration());
+
     }
 
     @Test

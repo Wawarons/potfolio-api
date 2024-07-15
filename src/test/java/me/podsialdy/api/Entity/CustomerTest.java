@@ -41,6 +41,39 @@ public class CustomerTest {
    }
 
    @Test
+   public void test_customer_setter() {
+      Customer customer = new Customer();
+      UUID id = UUID.randomUUID();
+      Set<Role> roles = new HashSet<Role>();
+      Set<RefreshToken> refreshTokens = new HashSet<RefreshToken>();
+      Instant now = Instant.now();
+      String email = "email@test.com";
+      String password = "RandomPass123.";
+      
+      roles.add(mock(Role.class));
+      refreshTokens.add(mock(RefreshToken.class));
+
+      customer.setId(id);
+      customer.setEmail(email);
+      customer.setPassword(password);
+      customer.setRoles(roles);
+      customer.setRefreshToken(refreshTokens);
+      customer.setBlock(false);
+      customer.setVerified(false);
+      customer.setCreatedAt(now);
+
+      assertEquals(id, customer.getId());
+      assertEquals(email, customer.getEmail());
+      assertEquals(password, customer.getPassword());
+      assertEquals(roles, customer.getRoles());
+      assertEquals(refreshTokens, customer.getRefreshToken());
+      assertEquals(false, customer.isBlock());
+      assertEquals(false, customer.isVerified());
+      assertEquals(now, customer.getCreatedAt());
+
+   }
+
+   @Test
    public void test_set_email() {
       Customer customer = new Customer();
       customer.setEmail("email@test.com");
@@ -164,11 +197,7 @@ public class CustomerTest {
       assertEquals(customer.isBlock(), false);
       assertEquals(customer.isVerified(), false);
 
-   }
-
-   // builder
-   // setBlock
-   // setVerified
+   } 
 
    @Test
    public void test_set_created_at() {

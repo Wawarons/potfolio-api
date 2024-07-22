@@ -43,6 +43,37 @@ public class RefreshTokenTest {
         }
 
         @Test
+        public void test_refreshToken_builder() {
+                
+                UUID idValue = UUID.randomUUID();
+                UUID sessionID = UUID.randomUUID();
+                Customer customerValue = mock(Customer.class);
+                Instant now = Instant.now();
+                Instant expirationValue = Instant.now().plus(5L, ChronoUnit.MINUTES);
+                String tokenValue = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflK";
+                
+                RefreshToken refreshToken = RefreshToken.builder()
+                .id(idValue)
+                .sessionId(sessionID)
+                .customer(customerValue)
+                .createdAt(now)
+                .expiration(expirationValue)
+                .token(tokenValue)
+                .isLocked(false)
+                .build();
+
+                assertEquals(idValue, refreshToken.getId());
+                assertEquals(sessionID, refreshToken.getSessionId());
+                assertEquals(customerValue, refreshToken.getCustomer());
+                assertEquals(now, refreshToken.getCreatedAt());
+                assertEquals(tokenValue, refreshToken.getToken());
+                assertEquals(expirationValue, refreshToken.getExpiration());
+                assertEquals(false, refreshToken.isLocked());
+
+
+        }
+
+        @Test
         public void test_refreshToken_toString() {
 
                 Customer customer = mock(Customer.class);

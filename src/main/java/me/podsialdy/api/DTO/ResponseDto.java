@@ -2,8 +2,9 @@ package me.podsialdy.api.DTO;
 
 import java.time.Instant;
 
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -23,7 +24,8 @@ import lombok.Setter;
 public class ResponseDto {
 
     @NotNull
-    @Pattern(regexp = "[0-9]{3}", message = "Code error invalid")
+    @Min(value = 100)
+    @Max(value = 600)
     private int code;
 
     @Size(min = 5, message = "Message size must be greater than 5")

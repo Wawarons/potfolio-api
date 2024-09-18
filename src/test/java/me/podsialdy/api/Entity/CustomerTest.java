@@ -15,6 +15,7 @@ import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import jakarta.validation.ValidatorFactory;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.time.Instant;
 import java.util.HashSet;
@@ -23,6 +24,7 @@ import java.util.UUID;
 
 @Slf4j
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@ActiveProfiles("test")
 public class CustomerTest {
 
    private Validator validator;

@@ -16,9 +16,11 @@ import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import jakarta.validation.ValidatorFactory;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.test.context.ActiveProfiles;
 
 @Slf4j
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@ActiveProfiles("test")
 public class ResponseDTOTest {
 
     // Test

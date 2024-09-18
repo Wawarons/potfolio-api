@@ -10,10 +10,12 @@ import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.test.context.ActiveProfiles;
 
 /**
  * RefreshTokenTest
  */
+@ActiveProfiles("test")
 public class RefreshTokenTest {
 
         @Test

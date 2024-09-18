@@ -1,9 +1,5 @@
 package me.podsialdy.api.Entity;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.time.Instant;
 import java.util.Set;
 
@@ -17,10 +13,14 @@ import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import jakarta.validation.ValidatorFactory;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.test.context.ActiveProfiles;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @Slf4j
-public class RoleTest {
+@ActiveProfiles("test")
+public class CustomerRoleTest {
 
     private Validator validator;
 
@@ -95,15 +95,15 @@ public class RoleTest {
         Role role4 = new Role(2, RoleEnum.USER.name(), Instant.now());
 
         role1.setRole(RoleEnum.ADMIN.name());
-        role2.setRole(RoleEnum.USER.name());
+        role2 .setRole(RoleEnum.USER.name());
 
         String wrongInstance = "blabla";
 
-        assertFalse(role1.equals(wrongInstance));
-        assertFalse(role1.equals(role2)); // Not the same Id
-        assertFalse(role2.equals(role3)); // Not the same Role
-        assertFalse(role1.equals(role3)); // Not the same Id and not the same role
-        assertTrue(role1.equals(role1)); // Same object
-        assertTrue(role2.equals(role4)); // Same id and same role
+        assertNotEquals(role1, wrongInstance);
+        assertNotEquals(role1, role2); // Not the same Id
+        assertNotEquals(role2, role3); // Not the same Role
+        assertNotEquals(role1, role3); // Not the same Id and not the same role
+        assertEquals(role1, role1); // Same object
+        assertEquals(role2, role4); // Same id and same role
     }
 }

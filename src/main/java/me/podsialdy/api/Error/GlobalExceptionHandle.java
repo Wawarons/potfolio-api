@@ -58,7 +58,7 @@ public class GlobalExceptionHandle {
                 .status(HttpStatus.NOT_FOUND)
                 .body(ResponseDto.builder()
                         .code(HttpStatus.NOT_FOUND.value())
-                        .message("Bad credentials")
+                        .message("User not found")
                         .build());
     }
 

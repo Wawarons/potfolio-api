@@ -2,11 +2,10 @@ package me.podsialdy.api.Service;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.List;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
+import me.podsialdy.api.Entity.Role;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -18,7 +17,6 @@ import com.auth0.jwt.interfaces.DecodedJWT;
 
 import lombok.extern.slf4j.Slf4j;
 import me.podsialdy.api.Entity.Customer;
-import me.podsialdy.api.Entity.Role;
 import me.podsialdy.api.Repository.RefreshTokenRepository;
 import me.podsialdy.api.Utils.JwtConfig;
 
@@ -193,9 +191,7 @@ public class JwtService {
      * @return An array of roles extracted from the set of Role objects
      */
     public String[] getUserRoles(Set<Role> roles) {
-        List<String> rolesList = roles.stream().map(role -> role.getRole()).collect(Collectors.toList());
-        String[] rolesArray = rolesList.toArray(new String[0]);
-        return rolesArray;
+        return roles.stream().map(Role::getRole).toArray(String[]::new);
     }
 
     /**

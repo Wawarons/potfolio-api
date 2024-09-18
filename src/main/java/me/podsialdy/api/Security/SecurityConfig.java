@@ -1,6 +1,7 @@
 package me.podsialdy.api.Security;
 
 import java.util.Arrays;
+import java.util.List;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -9,6 +10,7 @@ import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -30,14 +32,14 @@ public class SecurityConfig {
         .sessionManagement((session) -> {
           session.sessionCreationPolicy(SessionCreationPolicy.STATELESS);
         })
-        .csrf(csrf -> csrf.disable()) // Disable CSRF
+        .csrf(AbstractHttpConfigurer::disable) // Disable CSRF
         .cors(cors -> cors.configurationSource(corsConfigurationSource())) // Enable CORS
         .authorizeHttpRequests(authorize -> authorize
             .requestMatchers("/auth/**").permitAll()
             .requestMatchers("/_/admin/**").hasRole("ADMIN")
             .anyRequest().authenticated())
         .addFilterBefore(authFilter(), UsernamePasswordAuthenticationFilter.class)
-        .httpBasic(basic -> basic.disable());
+        .httpBasic(AbstractHttpConfigurer::disable);
 
     return http.build();
   }
@@ -66,9 +68,9 @@ public class SecurityConfig {
   @Bean
   CorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration configuration = new CorsConfiguration();
-    configuration.setAllowedOrigins(Arrays.asList("https://podsiadly.me"));
+    configuration.setAllowedOrigins(List.of("https://podsiadly.me"));
     configuration.setAllowedHeaders(Arrays.asList("Content-Type", "Authorization"));
-    configuration.setExposedHeaders(Arrays.asList("Authorization"));
+    configuration.setExposedHeaders(List.of("Authorization"));
     configuration.setAllowCredentials(true);
     configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

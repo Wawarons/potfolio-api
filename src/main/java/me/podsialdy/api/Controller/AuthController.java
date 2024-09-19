@@ -67,18 +67,18 @@ public class AuthController {
     public ResponseEntity<?> register(@Valid @RequestBody CustomerRegisterDto customerRegisterDto) {
 
         log.info("Attempt to create an user.");
-        ResponseMessage responseMessage = new ResponseMessage();
+        ResponseDto responseDto = new ResponseDto();
 
         if (customerRepository.findByEmail(customerRegisterDto.getEmail()).isPresent()) {
             log.error("Cannot create user email address is already taken.");
-            responseMessage.setMessage("Email already register");
-            responseMessage.setCode(HttpStatus.FORBIDDEN.toString());
-            return new ResponseEntity<ResponseMessage>(responseMessage, HttpStatus.FORBIDDEN);
+            responseDto.setMessage("Email already register");
+            responseDto.setCode(HttpStatus.FORBIDDEN.value());
+            return new ResponseEntity<ResponseDto>(responseDto, HttpStatus.FORBIDDEN);
         } else if (customerRepository.findByUsername(customerRegisterDto.getUsername()).isPresent()) {
             log.error("Cannot create user username is already taken.");
-            responseMessage.setMessage("Username already taken");
-            responseMessage.setCode(HttpStatus.FORBIDDEN.toString());
-            return new ResponseEntity<ResponseMessage>(responseMessage, HttpStatus.FORBIDDEN);
+            responseDto.setMessage("Username already taken");
+            responseDto.setCode(HttpStatus.FORBIDDEN.value());
+            return new ResponseEntity<ResponseDto>(responseDto, HttpStatus.FORBIDDEN);
         }
 
         Customer customer = Customer.builder()
@@ -90,9 +90,9 @@ public class AuthController {
         log.info("Attempt to save user");
         customerRepository.save(customer);
         log.info("New registration for customer: {}", customer.getId());
-        responseMessage.setMessage("User register successfully");
-        responseMessage.setCode(HttpStatus.CREATED.toString());
-        return new ResponseEntity<ResponseMessage>(responseMessage, HttpStatus.CREATED);
+        responseDto.setMessage("User register successfully");
+        responseDto.setCode(HttpStatus.CREATED.value());
+        return new ResponseEntity<ResponseDto>(responseDto, HttpStatus.CREATED);
 
     }
 

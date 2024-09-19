@@ -72,7 +72,7 @@ public class AuthFilter extends OncePerRequestFilter {
     @Autowired
     private JwtConfig jwtConfig;
 
-    private final String[] pathsToFilter = { "/auth/" };
+    private final String[] pathsToNoFilter = { "/auth/" };
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -212,7 +212,7 @@ public class AuthFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(@NonNull HttpServletRequest request) throws ServletException {
         String path = request.getRequestURI();
-        for (String pathToNotFilter : pathsToFilter) {
+        for (String pathToNotFilter : pathsToNoFilter) {
             if (path.contains(pathToNotFilter)) {
                 log.info("Path {} not filtered", path);
                 return true;

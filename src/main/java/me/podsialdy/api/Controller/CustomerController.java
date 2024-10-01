@@ -3,7 +3,7 @@ package me.podsialdy.api.Controller;
 import java.time.Instant;
 import java.util.Objects;
 
-import me.podsialdy.api.Utils.ResponseMessage;
+import me.podsialdy.api.DTO.ResponseDto;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -37,8 +37,8 @@ public class CustomerController {
 
         String userInfoToken = customerService.getCustomerInfo(token);
         if (Objects.isNull(userInfoToken)) {
-            ResponseMessage responseMessage = new ResponseMessage("internal server error", HttpStatus.INTERNAL_SERVER_ERROR.toString());
-            return new ResponseEntity<ResponseMessage>(responseMessage, HttpStatus.INTERNAL_SERVER_ERROR);
+            ResponseDto responseDto = new ResponseDto("internal server error", HttpStatus.INTERNAL_SERVER_ERROR.value());
+            return new ResponseEntity<ResponseDto>(responseDto, HttpStatus.INTERNAL_SERVER_ERROR);
         }
 
         return new ResponseEntity<>(new UserInfoTokenDto(userInfoToken, Instant.now()), HttpStatus.OK);

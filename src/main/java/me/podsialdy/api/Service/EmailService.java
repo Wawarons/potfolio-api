@@ -2,6 +2,7 @@ package me.podsialdy.api.Service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
@@ -49,9 +50,8 @@ public class EmailService {
             javaMailSender.send(message);
             log.info("Code validation send to customer {}", customer.getId());
 
-        } catch (MessagingException mex) {
+        } catch (MessagingException | MailException err) {
             log.error("Error sending validation code to customer {}", customer.getId());
-            mex.printStackTrace();
         }
     }
 

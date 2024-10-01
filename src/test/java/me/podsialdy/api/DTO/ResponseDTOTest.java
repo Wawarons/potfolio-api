@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Set;
 
 import org.junit.jupiter.api.AfterAll;
@@ -16,6 +18,7 @@ import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import jakarta.validation.ValidatorFactory;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
 
 @Slf4j
@@ -88,6 +91,30 @@ public class ResponseDTOTest {
         responseDto.setMessage("not");
         constraints = validator.validate(responseDto);
         assertFalse(constraints.isEmpty());
+    }
+
+    @Test
+    public void test_ResponseDto_builder() {
+        int code = HttpStatus.FORBIDDEN.value();
+        String message = "message";
+        Instant instant = Instant.now().plus(5L, ChronoUnit.SECONDS);
+        ResponseDto responseDto = ResponseDto.builder().code(code).message(message).timestamp(instant).build();
+
+        assertEquals(message, responseDto.getMessage());
+        assertEquals(code, responseDto.getCode());
+        assertEquals(instant, responseDto.getTimestamp());
+
+        code = HttpStatus.OK.value();
+        message = "new message";
+        instant = Instant.now();
+
+        responseDto.setCode(code);
+        responseDto.setMessage(message);
+        responseDto.setTimestamp(instant);
+
+        assertEquals(message, responseDto.getMessage());
+        assertEquals(code, responseDto.getCode());
+        assertEquals(instant, responseDto.getTimestamp());
     }
 
 }

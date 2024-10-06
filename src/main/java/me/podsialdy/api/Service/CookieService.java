@@ -18,7 +18,7 @@ import me.podsialdy.api.Utils.CookieConfig;
 @Slf4j
 public class CookieService {
 
-    
+
     private CookieConfig cookieConfig;
 
     @Autowired
@@ -87,5 +87,4 @@ public class CookieService {
         log.warn("Cookie access not found");
         return null;
     }
-
 }

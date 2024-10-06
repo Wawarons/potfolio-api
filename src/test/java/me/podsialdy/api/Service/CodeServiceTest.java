@@ -1,23 +1,17 @@
 package me.podsialdy.api.Service;
 
-import jakarta.validation.constraints.Email;
-import lombok.extern.slf4j.Slf4j;
 import me.podsialdy.api.Entity.Code;
 import me.podsialdy.api.Entity.Customer;
 import me.podsialdy.api.Repository.CodeRepository;
-import org.aspectj.lang.annotation.Before;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
-import java.util.Random;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -115,20 +109,5 @@ public class CodeServiceTest {
         verify(codeRepository, never()).save(any());
         assertFalse(result);
     }
-
-//        public boolean validateCode(Customer customer, String userCode) {
-//            Code code = codeRepository.findFirstByCustomerIdOrderByCreatedAtDesc(customer.getId()).getFirst();
-//            log.info("Customer {} attempt to validate a code", customer.getId());
-//            if (code.getCode().equals(userCode) && !code.isUsed() && code.getExpiration().isAfter(Instant.now())) {
-//                code.setUsed(true);
-//                codeRepository.save(code);
-//                log.info("Customer {} code validate", customer.getId());
-//                return true;
-//            }
-//            log.warn("Customer {} code invalid", customer.getId());
-//            return false;
-//
-//        }
-//
 
 }

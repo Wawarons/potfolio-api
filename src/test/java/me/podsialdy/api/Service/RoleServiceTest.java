@@ -1,18 +1,13 @@
 package me.podsialdy.api.Service;
 
-import jakarta.inject.Inject;
 import me.podsialdy.api.Entity.Role;
 import me.podsialdy.api.Entity.RoleEnum;
 import me.podsialdy.api.Repository.RoleRepository;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.util.Optional;
@@ -64,19 +59,5 @@ public class RoleServiceTest {
         assertEquals(role, result);
         verify(roleRepository, times(1)).save(any(Role.class));
     }
-
-//
-//    public Role initRole(RoleEnum newRole) {
-//        Role role = roleRepository.findByRole(newRole.name()).orElse(null);
-//        if (role == null) {
-//            Role addRole = new Role();
-//            addRole.setRole(newRole.name());
-//            roleRepository.save(addRole);
-//            role = addRole;
-//        }
-//
-//        return role;
-//
-//    }
 
 }

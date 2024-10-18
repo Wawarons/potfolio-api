@@ -20,94 +20,99 @@ import static org.mockito.Mockito.*;
 
 public class CodeServiceTest {
 
-    @Mock
-    private CodeRepository codeRepository;
+  @Mock
+  private CodeRepository codeRepository;
 
-    @Mock
-    private EmailService emailService;
+  @Mock
+  private EmailService emailService;
 
-    @InjectMocks
-    private CodeService codeService;
+  @InjectMocks
+  private CodeService codeService;
 
-    @BeforeEach
-    public void setup() {
-        MockitoAnnotations.openMocks(this);
-    }
+  @BeforeEach
+  public void setup() {
+    MockitoAnnotations.openMocks(this);
+  }
 
-    @Test
-    public void test_CodeService_sendCodeTo() {
-        Customer customer = Customer.builder().username("Antoine").email("adrien02.fr@gmail.com").password("PassRand123.").build();
+  @Test
+  public void test_CodeService_sendCodeTo() {
+    Customer customer = Customer.builder().username("Antoine").email("test@gmail.com").password("PassRand123.").build();
 
-        codeService.sendCodeTo(customer);
-        verify(codeRepository, times(1)).save(argThat(code -> code.getCustomer().equals(customer) && !code.getCode().isEmpty()));
-        verify(emailService, times(1)).sendValidationCode(eq(customer), anyString());
-    }
+    codeService.sendCodeTo(customer);
+    verify(codeRepository, times(1))
+        .save(argThat(code -> code.getCustomer().equals(customer) && !code.getCode().isEmpty()));
+    verify(emailService, times(1)).sendValidationCode(eq(customer), anyString());
+  }
 
-    @Test
-    public void test_CodeService_generate_code() {
-        assertEquals(codeService.generateCode().length(),  6);
-    }
+  @Test
+  public void test_CodeService_generate_code() {
+    assertEquals(codeService.generateCode().length(), 6);
+  }
 
-    @Test
-    public void test_CodeService_validateCode_valid() {
-        Customer customer = Customer.builder().id(UUID.randomUUID()).username("Antoine").email("test@gmail.com").password("PassRand123.").build();
-        Instant expiration = Instant.now().plus(5L, ChronoUnit.MINUTES);
-        Code code = Code.builder().customer(customer).code("123456").isUsed(false).expiration(expiration).build();
-        when(codeRepository.findFirstByCustomerIdOrderByCreatedAtDesc(customer.getId())).thenReturn(List.of(code));
+  @Test
+  public void test_CodeService_validateCode_valid() {
+    Customer customer = Customer.builder().id(UUID.randomUUID()).username("Antoine").email("test@gmail.com")
+        .password("PassRand123.").build();
+    Instant expiration = Instant.now().plus(5L, ChronoUnit.MINUTES);
+    Code code = Code.builder().customer(customer).code("123456").isUsed(false).expiration(expiration).build();
+    when(codeRepository.findFirstByCustomerIdOrderByCreatedAtDesc(customer.getId())).thenReturn(List.of(code));
 
-        assertFalse(code.isUsed());
+    assertFalse(code.isUsed());
 
-        boolean result = codeService.validateCode(customer, code.getCode());
+    boolean result = codeService.validateCode(customer, code.getCode());
 
-        verify(codeRepository, times(1)).save(argThat(codeArg -> codeArg.equals(code)));
-        assertTrue(code.isUsed());
-        assertTrue(result);
+    verify(codeRepository, times(1)).save(argThat(codeArg -> codeArg.equals(code)));
+    assertTrue(code.isUsed());
+    assertTrue(result);
 
-    }
+  }
 
-    @Test
-    public void test_CodeService_validateCode_invalid() {
-        Customer customer = Customer.builder().id(UUID.randomUUID()).username("Antoine").email("test@gmail.com").password("PassRand123.").build();
-        Instant expiration = Instant.now().plus(5L, ChronoUnit.MINUTES);
-        Code code = Code.builder().customer(customer).code("123456").isUsed(false).expiration(expiration).build();
-        when(codeRepository.findFirstByCustomerIdOrderByCreatedAtDesc(customer.getId())).thenReturn(List.of(code));
+  @Test
+  public void test_CodeService_validateCode_invalid() {
+    Customer customer = Customer.builder().id(UUID.randomUUID()).username("Antoine").email("test@gmail.com")
+        .password("PassRand123.").build();
+    Instant expiration = Instant.now().plus(5L, ChronoUnit.MINUTES);
+    Code code = Code.builder().customer(customer).code("123456").isUsed(false).expiration(expiration).build();
+    when(codeRepository.findFirstByCustomerIdOrderByCreatedAtDesc(customer.getId())).thenReturn(List.of(code));
 
-        assertFalse(code.isUsed());
+    assertFalse(code.isUsed());
 
-        boolean result = codeService.validateCode(customer, "000000");
+    boolean result = codeService.validateCode(customer, "000000");
 
-        verify(codeRepository, never()).save(any());
-        assertFalse(result);
-    }
+    verify(codeRepository, never()).save(any());
+    assertFalse(result);
+  }
 
-    @Test
-    public void test_CodeService_validateCode_expiration() {
-        Customer customer = Customer.builder().id(UUID.randomUUID()).username("Antoine").email("test@gmail.com").password("PassRand123.").build();
-        Instant expiration = Instant.now().minus(5L, ChronoUnit.MINUTES);
-        Code code = Code.builder().customer(customer).code("123456").isUsed(false).expiration(expiration).build();
-        when(codeRepository.findFirstByCustomerIdOrderByCreatedAtDesc(customer.getId())).thenReturn(List.of(code));
+  @Test
+  public void test_CodeService_validateCode_expiration() {
+    Customer customer = Customer.builder().id(UUID.randomUUID()).username("Antoine").email("test@gmail.com")
+        .password("PassRand123.").build();
+    Instant expiration = Instant.now().minus(5L, ChronoUnit.MINUTES);
+    Code code = Code.builder().customer(customer).code("123456").isUsed(false).expiration(expiration).build();
+    when(codeRepository.findFirstByCustomerIdOrderByCreatedAtDesc(customer.getId())).thenReturn(List.of(code));
 
-        assertFalse(code.isUsed());
+    assertFalse(code.isUsed());
 
-        boolean result = codeService.validateCode(customer, code.getCode());
+    boolean result = codeService.validateCode(customer, code.getCode());
 
-        verify(codeRepository, never()).save(any());
-        assertFalse(result);
-    }
+    verify(codeRepository, never()).save(any());
+    assertFalse(result);
+  }
 
-    @Test
-    public void test_CodeService_validateCode_is_used() {
-        Customer customer = Customer.builder().id(UUID.randomUUID()).username("Antoine").email("test@gmail.com").password("PassRand123.").build();
-        Instant expiration = Instant.now().plus(5L, ChronoUnit.MINUTES);
-        Code code = Code.builder().customer(customer).code("123456").isUsed(true).expiration(expiration).build();
-        when(codeRepository.findFirstByCustomerIdOrderByCreatedAtDesc(customer.getId())).thenReturn(List.of(code));
+  @Test
+  public void test_CodeService_validateCode_is_used() {
+    Customer customer = Customer.builder().id(UUID.randomUUID()).username("Antoine").email("test@gmail.com")
+        .password("PassRand123.").build();
+    Instant expiration = Instant.now().plus(5L, ChronoUnit.MINUTES);
+    Code code = Code.builder().customer(customer).code("123456").isUsed(true).expiration(expiration).build();
+    when(codeRepository.findFirstByCustomerIdOrderByCreatedAtDesc(customer.getId())).thenReturn(List.of(code));
 
-        assertTrue(code.isUsed());
+    assertTrue(code.isUsed());
 
-        boolean result = codeService.validateCode(customer, code.getCode());
+    boolean result = codeService.validateCode(customer, code.getCode());
 
-        verify(codeRepository, never()).save(any());
-        assertFalse(result);
-    }
+    verify(codeRepository, never()).save(any());
+    assertFalse(result);
+  }
 
 }
